@@ -15,6 +15,14 @@ patterns = [
     (r"==", "=="),
     # Inequality must win over the single-character spelling of "not".
     (r"!=", "!="),
+    
+    # Compound Assignment for addition, subtraction, division and multiplication
+    (r"\+=", "+="),
+    (r"-=", "-="),
+    (r"/=", "/="),
+    (r"\*=", "*="),
+     
+    
     # Normalize both spellings here, so the parser only needs word-form tags.
     # Word boundaries keep names such as "android" and "notable" intact.
     (r"and\b|&&", "and"),
@@ -99,6 +107,7 @@ patterns = [
     # obj.field, "obj" is already its own identifier token, and "field"
     # starts with a letter, not a digit.
     (r"\.", "."),
+
 
     (r"[a-zA-Z_][\w]*", "identifier"),
     (r".", "error"),
