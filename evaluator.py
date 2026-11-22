@@ -851,6 +851,39 @@ def evaluate(ast, environment):
         # assignment evaluates to 1, and x is assigned that same 1.
         return value, None
 
+    # Compound Assignment
+    if (
+        ast["tag"] == "compound_assignment_add"
+        or ast["tag"] == "compound_assignment_subtract"
+        or ast["tag"] == "compound_assignment_divide"
+        or ast["tag"] == "compound_assignment_multiply"
+    ):
+
+        # Gets the left and right nodes correctly
+        left, _ = evaluate(ast["target"], environment)
+        right, _ = evaluate(ast["expression"], environment)
+
+        if ast["tag"] == "compound_assignment_add":
+            new_left = left + right
+            index = ast["target"]["value"]
+            environment[index] = new_left
+            return new_left, None
+        if ast["tag"] == "compound_assignment_subtract":
+            new_left = left - right
+            index = ast["target"]["value"]
+            environment[index] = new_left
+            return new_left, None
+        if ast["tag"] == "compound_assignment_divide":
+            new_left = left / right
+            index = ast["target"]["value"]
+            environment[index] = new_left
+            return new_left, None
+        if ast["tag"] == "compound_assignment_multiply":
+            new_left = left * right
+            index = ast["target"]["value"]
+            environment[index] = new_left
+            return new_left, None
+
     if ast["tag"] == "unary-":
         value, status = evaluate(ast["operand"], environment)
         if status is not None:
@@ -858,20 +891,6 @@ def evaluate(ast, environment):
         if type(value) is bool:
             raise TypeError("Unary minus requires a number")
         return -value, None
-
-    # Compound Assignment
-    if ast["tag"] == "compound_assignment_add":
-        new_left = left + right
-        return new_left, None
-    if ast["tag"] == "compound_assignment_subtract":
-        new_left = left - right
-        return new_left, None
-    if ast["tag"] == "compound_assignment_divide":
-        new_left = left / right
-        return new_left, None
-    if ast["tag"] == "compound_assignment_multiply":
-        new_left = left * right
-        return new_left, None
 
     if ast["tag"] in ("==", "!=", "<", "<=", ">", ">="):
         # Comparisons evaluate both operands, left to right. Unlike logical
