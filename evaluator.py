@@ -23,6 +23,7 @@ PARENT_KEY = "$PARENT"
 # ===== CHAPTER 13 =====
 class ModuleEnvironment(dict):
     """The actual module globals, with host bookkeeping outside its fields."""
+
     def __init__(self, source_path):
         super().__init__()
         self.source_path = source_path
@@ -56,7 +57,9 @@ def import_program(filename, environment):
     if not filename:
         raise ValueError("import path must not be empty")
     root = global_environment(environment)
-    source = root.source_path if isinstance(root, ModuleEnvironment) else SOURCE_PATH.get()
+    source = (
+        root.source_path if isinstance(root, ModuleEnvironment) else SOURCE_PATH.get()
+    )
     path = Path(filename)
     if not path.is_absolute():
         path = (Path(source).parent if source else Path.cwd()) / path
@@ -117,8 +120,12 @@ def make_native_function(name, parameters, implementation):
     # Native functions share the identity/type/copy/display rules of closures.
     global function_count
     function_count += 1
-    return {FUNCTION_KEY: function_count, "parameters": parameters.copy(),
-            "native": implementation, "name": name}
+    return {
+        FUNCTION_KEY: function_count,
+        "parameters": parameters.copy(),
+        "native": implementation,
+        "name": name,
+    }
 
 
 def native(name, parameters):
@@ -128,9 +135,11 @@ def native(name, parameters):
     if type(parameters) is not list:
         raise TypeError("native parameters must be a list of names")
     for parameter in parameters:
-        if (type(parameter) is not str or
-                re.fullmatch(r"[a-zA-Z_][\w]*", parameter) is None or
-                tokenizer.tokenize(parameter)[0]["tag"] != "identifier"):
+        if (
+            type(parameter) is not str
+            or re.fullmatch(r"[a-zA-Z_][\w]*", parameter) is None
+            or tokenizer.tokenize(parameter)[0]["tag"] != "identifier"
+        ):
             raise ValueError("native parameters must be valid identifier names")
     if len(set(parameters)) != len(parameters):
         raise ValueError("native parameter names must be unique")
@@ -234,7 +243,9 @@ def vertex_equal(left, right, comparing=None):
     # disagree on that one field, so the generic structural comparison
     # below already returns False for them on its own, without ever
     # needing to look past that first field into parameters or body.
-    if ((type(left) is list and type(right) is list) or (is_object(left) and is_object(right))):
+    if (type(left) is list and type(right) is list) or (
+        is_object(left) and is_object(right)
+    ):
         if comparing is None:
             comparing = set()
         pair = (id(left), id(right))
@@ -245,8 +256,9 @@ def vertex_equal(left, right, comparing=None):
         comparing.add(pair)
         try:
             if is_object(left):
-                return (left.keys() == right.keys() and
-                        all(vertex_equal(left[key], right[key], comparing) for key in left))
+                return left.keys() == right.keys() and all(
+                    vertex_equal(left[key], right[key], comparing) for key in left
+                )
             return all(vertex_equal(l, r, comparing) for l, r in zip(left, right))
         finally:
             comparing.discard(pair)
@@ -282,7 +294,7 @@ def vertex_repr(value, ancestors=None):
         return "null"
     if is_function(value):
         return "<function>"
-    if (type(value) is list or is_object(value)):
+    if type(value) is list or is_object(value):
         if ancestors is None:
             ancestors = set()
         if id(value) in ancestors:
@@ -290,15 +302,27 @@ def vertex_repr(value, ancestors=None):
         ancestors.add(id(value))
         try:
             if is_object(value):
-                return "{" + ", ".join(vertex_repr(key, ancestors) + ": " +
-                                       vertex_repr(item, ancestors)
-                                       for key, item in value.items()) + "}"
+                return (
+                    "{"
+                    + ", ".join(
+                        vertex_repr(key, ancestors)
+                        + ": "
+                        + vertex_repr(item, ancestors)
+                        for key, item in value.items()
+                    )
+                    + "}"
+                )
             return "[" + ", ".join(vertex_repr(item, ancestors) for item in value) + "]"
         finally:
             ancestors.discard(id(value))
     if type(value) is str:
-        escaped = (value.replace("\\", "\\\\").replace('"', '\\"')
-                   .replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"))
+        escaped = (
+            value.replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("\n", "\\n")
+            .replace("\t", "\\t")
+            .replace("\r", "\\r")
+        )
         return '"' + escaped + '"'
     return str(value)
 
@@ -456,10 +480,12 @@ def evaluate(ast, environment):
     if ast["tag"] == "function":
         global function_count
         function_count += 1
-        return {FUNCTION_KEY: function_count,
-                "parameters": ast["parameters"],
-                "body": ast["body"],
-                "environment": environment}, None
+        return {
+            FUNCTION_KEY: function_count,
+            "parameters": ast["parameters"],
+            "body": ast["body"],
+            "environment": environment,
+        }, None
 
     if ast["tag"] == "return":
         # A bare return and falling off the end of a body both leave the
@@ -704,7 +730,7 @@ def evaluate(ast, environment):
             return "null", None
         if is_function(value):
             return vertex_repr(value), None
-        if (type(value) is list or is_object(value)):
+        if type(value) is list or is_object(value):
             return vertex_repr(value), None
         raise TypeError("string argument must be a Vertex value")
 
@@ -751,10 +777,14 @@ def evaluate(ast, environment):
         # Unlike ordinary assignment, set never creates a local binding.
         name = ast["name"]
         destination = environment
-        if name in ("__input", "__output") and isinstance(global_environment(environment), ModuleEnvironment):
+        if name in ("__input", "__output") and isinstance(
+            global_environment(environment), ModuleEnvironment
+        ):
             destination = io_environment(environment)
         while name not in destination:
-            if PARENT_KEY not in destination or isinstance(destination, ModuleEnvironment):
+            if PARENT_KEY not in destination or isinstance(
+                destination, ModuleEnvironment
+            ):
                 raise NameError(f"Cannot set undefined variable: {name}")
             destination = destination[PARENT_KEY]
         value, status = evaluate(ast["expression"], environment)
@@ -829,7 +859,6 @@ def evaluate(ast, environment):
             raise TypeError("Unary minus requires a number")
         return -value, None
 
-
     # Compound Assignment
     if ast["tag"] == "compound_assignment_add":
         new_left = left + right
@@ -843,7 +872,7 @@ def evaluate(ast, environment):
     if ast["tag"] == "compound_assignment_multiply":
         new_left = left * right
         return new_left, None
-        
+
     if ast["tag"] in ("==", "!=", "<", "<=", ">", ">="):
         # Comparisons evaluate both operands, left to right. Unlike logical
         # operators they have no short-circuit case.
@@ -921,7 +950,7 @@ def evaluate(ast, environment):
         elif result is None or is_function(result):
             # ===== CHAPTER 11 =====
             text = vertex_repr(result)
-        elif (type(result) is list or is_object(result)):
+        elif type(result) is list or is_object(result):
             # ===== CHAPTER 9 =====
             text = vertex_repr(result)
         else:
@@ -1043,7 +1072,12 @@ def test_evaluate_environments():
     print("test evaluate environments")
     result, environment = evaluate_source('name="Ada";greeting="Hello, "+name')
     assert result == (None, None)
-    assert environment == {"name": "Ada", "greeting": "Hello, Ada", "__input": "", "__output": ""}
+    assert environment == {
+        "name": "Ada",
+        "greeting": "Hello, Ada",
+        "__input": "",
+        "__output": "",
+    }
 
 
 def test_evaluate_input():
@@ -1056,9 +1090,7 @@ def test_evaluate_input():
         assert evaluate(ast, {}) == ("one line", None)
         fake_input.assert_called_once_with()
 
-    ast, rest = parser.parse_expression(
-        tokenizer.tokenize('input("Your " + "name? ")')
-    )
+    ast, rest = parser.parse_expression(tokenizer.tokenize('input("Your " + "name? ")'))
     assert rest[0]["tag"] is None
     with patch("builtins.input", return_value="Ada") as fake_input:
         assert evaluate(ast, {}) == ("Ada", None)
@@ -1099,7 +1131,7 @@ def test_evaluate_chapter_3_program():
     """
 
     output = io.StringIO()
-    with patch("builtins.input", side_effect=["Ada", "testing"] ) as fake_input:
+    with patch("builtins.input", side_effect=["Ada", "testing"]) as fake_input:
         with redirect_stdout(output):
             result, environment = evaluate_source(source)
 
@@ -1120,18 +1152,18 @@ def test_evaluate_chapter_3_program():
 def test_evaluate_if():
     # ===== CHAPTER 7 TEST =====
     print("test evaluate if")
-    result, environment = evaluate_source('if (true) { x=1 }')
+    result, environment = evaluate_source("if (true) { x=1 }")
     assert result == (None, None)
     assert environment["x"] == 1
 
-    result, environment = evaluate_source('if (false) { x=1 }')
+    result, environment = evaluate_source("if (false) { x=1 }")
     assert result == (None, None)
     assert "x" not in environment
 
-    result, environment = evaluate_source('if (false) { x=1 } else { x=2 }')
+    result, environment = evaluate_source("if (false) { x=1 } else { x=2 }")
     assert environment["x"] == 2
 
-    result, environment = evaluate_source('x=1; if (true) { }; x=2')
+    result, environment = evaluate_source("x=1; if (true) { }; x=2")
     assert result == (None, None)
     assert environment["x"] == 2
 
@@ -1139,27 +1171,29 @@ def test_evaluate_if():
 def test_evaluate_while():
     # ===== CHAPTER 8 TEST =====
     print("test evaluate while")
-    result, environment = evaluate_source('i=0; while (i < 3) { i=i+1 }')
+    result, environment = evaluate_source("i=0; while (i < 3) { i=i+1 }")
     assert result == (None, None)
     assert environment["i"] == 3
 
     # A false initial condition means the body never runs.
-    result, environment = evaluate_source('i=0; while (false) { i=99 }')
+    result, environment = evaluate_source("i=0; while (false) { i=99 }")
     assert environment["i"] == 0
 
     # break stops the loop and completes normally.
     result, environment = evaluate_source(
-        'i=0; while (true) { i=i+1; if (i == 3) { break } }')
+        "i=0; while (true) { i=i+1; if (i == 3) { break } }"
+    )
     assert result == (None, None)
     assert environment["i"] == 3
 
     # continue skips the rest of the body and reevaluates the condition.
     result, environment = evaluate_source(
-        'i=0; total=0; while (i < 5) { i=i+1; if (i == 3) { continue }; total=total+i }')
+        "i=0; total=0; while (i < 5) { i=i+1; if (i == 3) { continue }; total=total+i }"
+    )
     assert environment["total"] == 12  # 1+2+4+5, 3 skipped
 
     # exit propagates outward instead of being consumed like break.
-    result, environment = evaluate_source('while (true) { exit(7) }')
+    result, environment = evaluate_source("while (true) { exit(7) }")
     assert result == (7, "exit")
 
 

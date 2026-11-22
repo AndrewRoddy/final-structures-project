@@ -2,7 +2,6 @@
 
 from tokenizer import tokenize
 
-
 # EBNF
 #
 #   program ::= statement_list
@@ -181,10 +180,16 @@ def parse_factor(tokens):
 
     # All five forms take one expression. The AST retains the operation tag;
     # checking the argument's runtime type belongs to the evaluator.
-    operations = {"number_conversion": "number", "string_conversion": "string",
-                  "boolean_conversion": "boolean", "type_query": "type",
-                  "length": "length", "head": "head", "tail": "tail",
-                  "copy": "copy"}
+    operations = {
+        "number_conversion": "number",
+        "string_conversion": "string",
+        "boolean_conversion": "boolean",
+        "type_query": "type",
+        "length": "length",
+        "head": "head",
+        "tail": "tail",
+        "copy": "copy",
+    }
     if token["tag"] in operations:
         name = operations[token["tag"]]
         tokens = require(tokens[1:], "(", f"Expected '(' after '{name}'")
@@ -412,19 +417,40 @@ def parse_expression(tokens):
     # x = y = 1 parses as x = (y = 1), the same nesting a reader would draw.
     # Operator aliases were normalized by the tokenizer, not by these helpers.
     left, tokens = parse_logic_or(tokens)
-    if tokens[0]["tag"] == "+=" or tokens[0]["tag"] == "-=" or tokens[0]["tag"] == "/=" or tokens[0]["tag"] == "*=":
+    if (
+        tokens[0]["tag"] == "+="
+        or tokens[0]["tag"] == "-="
+        or tokens[0]["tag"] == "/="
+        or tokens[0]["tag"] == "*="
+    ):
         right, tokens = parse_expression(tokens[1:])
         if tokens[0]["tag"] == "+=":
-            return {"tag": "compound_assignment_add", "target": left, "expression": right}, tokens
+            return {
+                "tag": "compound_assignment_add",
+                "target": left,
+                "expression": right,
+            }, tokens
         elif tokens[0]["tag"] == "-=":
-            return {"tag": "compound_assignment_subtract", "target": left, "expression": right}, tokens
+            return {
+                "tag": "compound_assignment_subtract",
+                "target": left,
+                "expression": right,
+            }, tokens
         elif tokens[0]["tag"] == "/=":
-            return {"tag": "compound_assignment_divide", "target": left, "expression": right}, tokens
+            return {
+                "tag": "compound_assignment_divide",
+                "target": left,
+                "expression": right,
+            }, tokens
         elif tokens[0]["tag"] == "*=":
-            return {"tag": "compound_assignment_multiply", "target": left, "expression": right}, tokens
+            return {
+                "tag": "compound_assignment_multiply",
+                "target": left,
+                "expression": right,
+            }, tokens
         else:
             raise ValueError("Unknown form of compound assignment")
-        
+
     elif tokens[0]["tag"] == "=":
         right, tokens = parse_expression(tokens[1:])
         return {"tag": "assign", "target": left, "expression": right}, tokens
@@ -530,8 +556,12 @@ def parse_if_statement(tokens):
     else_block = None
     if tokens[0]["tag"] == "else":
         else_block, tokens = parse_block(tokens[1:])
-    return {"tag": "if", "condition": condition, "then": then_block,
-            "else": else_block}, tokens
+    return {
+        "tag": "if",
+        "condition": condition,
+        "then": then_block,
+        "else": else_block,
+    }, tokens
 
 
 def parse_while_statement(tokens):
@@ -626,8 +656,11 @@ def parse_assert_statement(tokens):
         raise SyntaxError("Expected explanation string after ','")
     explanation = tokens[0]["value"]
     tokens = tokens[1:]
-    return {"tag": "assert", "expression": expression,
-            "explanation": explanation}, tokens
+    return {
+        "tag": "assert",
+        "expression": expression,
+        "explanation": explanation,
+    }, tokens
 
 
 def parse_exit_expression(tokens):
@@ -670,7 +703,10 @@ def parse_statement_list(tokens):
 def parse_program(tokens):
     # An empty file is a program with no statements and no public bindings.
     if tokens[0]["tag"] is None:
-        return {"tag": "program", "statements": {"tag": "statement_list", "statements": []}}, tokens
+        return {
+            "tag": "program",
+            "statements": {"tag": "statement_list", "statements": []},
+        }, tokens
     statements, tokens = parse_statement_list(tokens)
     return {"tag": "program", "statements": statements}, tokens
 
@@ -764,20 +800,27 @@ def test_parse_list_expression():
     assert rest[0]["tag"] is None
 
     ast, rest = parse_list_expression(tokenize('[1, "two", true]'))
-    assert ast == {"tag": "list", "items": [
-        {"tag": "number", "value": 1},
-        {"tag": "string", "value": "two"},
-        {"tag": "boolean", "value": True},
-    ]}
+    assert ast == {
+        "tag": "list",
+        "items": [
+            {"tag": "number", "value": 1},
+            {"tag": "string", "value": "two"},
+            {"tag": "boolean", "value": True},
+        ],
+    }
     assert rest[0]["tag"] is None
 
     # A list literal is itself a factor, so it can be indexed immediately.
     ast, rest = parse_complex_expression(tokenize("[1, 2][0]"))
     assert ast == {
         "tag": "complex",
-        "base": {"tag": "list", "items": [
-            {"tag": "number", "value": 1}, {"tag": "number", "value": 2},
-        ]},
+        "base": {
+            "tag": "list",
+            "items": [
+                {"tag": "number", "value": 1},
+                {"tag": "number", "value": 2},
+            ],
+        },
         "index": {"tag": "number", "value": 0},
     }
     assert rest[0]["tag"] is None
@@ -820,8 +863,10 @@ def test_parse_length_expression():
     # ===== CHAPTER 9 TESTS =====
     print("test parse length expression")
     ast, rest = parse_factor(tokenize("length(items)"))
-    assert ast == {"tag": "length",
-                    "expression": {"tag": "identifier", "value": "items"}}
+    assert ast == {
+        "tag": "length",
+        "expression": {"tag": "identifier", "value": "items"},
+    }
     assert rest[0]["tag"] is None
 
     # length() is only valid in an expression context, not as a bare
@@ -834,28 +879,29 @@ def test_parse_slice_head_tail_expressions():
     # ===== CHAPTER 9 TESTS =====
     print("test parse slice, head, and tail expressions")
     ast, rest = parse_factor(tokenize("slice(items, 1, 3)"))
-    assert ast == {"tag": "slice",
-                   "expression": {"tag": "identifier", "value": "items"},
-                   "start": {"tag": "number", "value": 1},
-                   "end": {"tag": "number", "value": 3}}
+    assert ast == {
+        "tag": "slice",
+        "expression": {"tag": "identifier", "value": "items"},
+        "start": {"tag": "number", "value": 1},
+        "end": {"tag": "number", "value": 3},
+    }
     assert rest[0]["tag"] is None
 
     ast, rest = parse_factor(tokenize("head(items)"))
-    assert ast == {"tag": "head",
-                   "expression": {"tag": "identifier", "value": "items"}}
+    assert ast == {"tag": "head", "expression": {"tag": "identifier", "value": "items"}}
     assert rest[0]["tag"] is None
 
     ast, rest = parse_factor(tokenize("tail(items)"))
-    assert ast == {"tag": "tail",
-                   "expression": {"tag": "identifier", "value": "items"}}
+    assert ast == {"tag": "tail", "expression": {"tag": "identifier", "value": "items"}}
     assert rest[0]["tag"] is None
 
     # Each result is a factor, so it can be indexed or nested immediately.
     ast, rest = parse_complex_expression(tokenize("tail(items)[0]"))
-    assert ast == {"tag": "complex",
-                   "base": {"tag": "tail",
-                            "expression": {"tag": "identifier", "value": "items"}},
-                   "index": {"tag": "number", "value": 0}}
+    assert ast == {
+        "tag": "complex",
+        "base": {"tag": "tail", "expression": {"tag": "identifier", "value": "items"}},
+        "index": {"tag": "number", "value": 0},
+    }
     assert rest[0]["tag"] is None
 
     ast, rest = parse_factor(tokenize("slice(tail(items), 0, length(items))"))
@@ -878,16 +924,16 @@ def test_parse_copy_expression():
     # ===== CHAPTER 10 TEST =====
     print("test parse copy expression")
     ast, rest = parse_factor(tokenize("copy(items)"))
-    assert ast == {"tag": "copy",
-                   "expression": {"tag": "identifier", "value": "items"}}
+    assert ast == {"tag": "copy", "expression": {"tag": "identifier", "value": "items"}}
     assert rest[0]["tag"] is None
 
     # A factor, so it can be indexed or nested immediately.
     ast, rest = parse_complex_expression(tokenize("copy(items)[0]"))
-    assert ast == {"tag": "complex",
-                   "base": {"tag": "copy",
-                            "expression": {"tag": "identifier", "value": "items"}},
-                   "index": {"tag": "number", "value": 0}}
+    assert ast == {
+        "tag": "complex",
+        "base": {"tag": "copy", "expression": {"tag": "identifier", "value": "items"}},
+        "index": {"tag": "number", "value": 0},
+    }
 
     expect_syntax_error("x=copy items)", "Expected '('")
     expect_syntax_error("x=copy(items", "Expected ')'")
@@ -901,9 +947,11 @@ def test_parse_dot_syntax():
     bracket_ast, _ = parse_complex_expression(tokenize('obj["field"]'))
     # Sugar: the exact same AST, not merely an equivalent one.
     assert dot_ast == bracket_ast
-    assert dot_ast == {"tag": "complex",
-                       "base": {"tag": "identifier", "value": "obj"},
-                       "index": {"tag": "string", "value": "field"}}
+    assert dot_ast == {
+        "tag": "complex",
+        "base": {"tag": "identifier", "value": "obj"},
+        "index": {"tag": "string", "value": "field"},
+    }
 
     # Suffixes mix freely, in any order, read and assignment target alike.
     ast, rest = parse_complex_expression(tokenize('a[1].bob[3][4].a.b["dog"]'))
@@ -912,11 +960,13 @@ def test_parse_dot_syntax():
     assert ast["index"] == {"tag": "string", "value": "dog"}
     assert ast["base"]["index"] == {"tag": "string", "value": "b"}
 
-    ast, rest = parse_statement(tokenize('a.b = 5;'))
+    ast, rest = parse_statement(tokenize("a.b = 5;"))
     assert ast["tag"] == "assign"
-    assert ast["target"] == {"tag": "complex",
-                             "base": {"tag": "identifier", "value": "a"},
-                             "index": {"tag": "string", "value": "b"}}
+    assert ast["target"] == {
+        "tag": "complex",
+        "base": {"tag": "identifier", "value": "a"},
+        "index": {"tag": "string", "value": "b"},
+    }
 
     expect_syntax_error("x=obj.", "Expected a field name after '.'")
     expect_syntax_error('x=obj."field"', "Expected a field name after '.'")
@@ -941,16 +991,22 @@ def test_parse_function_expression():
     assert ast == {
         "tag": "function",
         "parameters": ["x"],
-        "body": {"tag": "statement_list",
-                 "statements": [{"tag": "return",
-                                 "expression": {"tag": "identifier", "value": "x"}}]},
+        "body": {
+            "tag": "statement_list",
+            "statements": [
+                {"tag": "return", "expression": {"tag": "identifier", "value": "x"}}
+            ],
+        },
     }
     assert rest[0]["tag"] is None
 
     # No parameters, and an empty body.
     ast, rest = parse_factor(tokenize("function() { }"))
-    assert ast == {"tag": "function", "parameters": [],
-                   "body": {"tag": "statement_list", "statements": []}}
+    assert ast == {
+        "tag": "function",
+        "parameters": [],
+        "body": {"tag": "statement_list", "statements": []},
+    }
     assert rest[0]["tag"] is None
 
     # Multiple parameters.
@@ -978,11 +1034,19 @@ def test_parse_function_definition():
         "expression": {
             "tag": "function",
             "parameters": ["x"],
-            "body": {"tag": "statement_list",
-                     "statements": [{"tag": "return",
-                                     "expression": {"tag": "+",
-                                                    "left": {"tag": "identifier", "value": "x"},
-                                                    "right": {"tag": "identifier", "value": "x"}}}]},
+            "body": {
+                "tag": "statement_list",
+                "statements": [
+                    {
+                        "tag": "return",
+                        "expression": {
+                            "tag": "+",
+                            "left": {"tag": "identifier", "value": "x"},
+                            "right": {"tag": "identifier", "value": "x"},
+                        },
+                    }
+                ],
+            },
         },
     }
 
@@ -993,15 +1057,20 @@ def test_parse_function_definition():
     # parse_function_definition directly still rejects a missing name --
     # that check stays, for whatever might call this function on its own.
     ast, rest = parse_statement(tokenize("function(x) { }"))
-    assert ast == {"tag": "function", "parameters": ["x"],
-                   "body": {"tag": "statement_list", "statements": []}}
+    assert ast == {
+        "tag": "function",
+        "parameters": ["x"],
+        "body": {"tag": "statement_list", "statements": []},
+    }
     assert rest[0]["tag"] is None
     try:
         parse_function_definition(tokenize("function(x) { }"))
     except SyntaxError as error:
         assert "Expected a function name" in str(error)
     else:
-        raise Exception("Expected SyntaxError for parse_function_definition('function(x) { }')")
+        raise Exception(
+            "Expected SyntaxError for parse_function_definition('function(x) { }')"
+        )
 
 
 def test_parse_return_statement():
@@ -1023,24 +1092,36 @@ def test_parse_call_expression():
     # ===== CHAPTER 11 TEST =====
     print("test parse call expression")
     ast, rest = parse_complex_expression(tokenize("f()"))
-    assert ast == {"tag": "call", "callee": {"tag": "identifier", "value": "f"},
-                   "arguments": []}
+    assert ast == {
+        "tag": "call",
+        "callee": {"tag": "identifier", "value": "f"},
+        "arguments": [],
+    }
     assert rest[0]["tag"] is None
 
     ast, rest = parse_complex_expression(tokenize("f(1, 2, 3)"))
-    assert ast == {"tag": "call", "callee": {"tag": "identifier", "value": "f"},
-                   "arguments": [{"tag": "number", "value": 1},
-                                 {"tag": "number", "value": 2},
-                                 {"tag": "number", "value": 3}]}
+    assert ast == {
+        "tag": "call",
+        "callee": {"tag": "identifier", "value": "f"},
+        "arguments": [
+            {"tag": "number", "value": 1},
+            {"tag": "number", "value": 2},
+            {"tag": "number", "value": 3},
+        ],
+    }
     assert rest[0]["tag"] is None
 
     # The three suffixes mix freely, in any order, same as [] and . already did.
     ast, rest = parse_complex_expression(tokenize("funcs[0](x)"))
-    assert ast == {"tag": "call",
-                   "callee": {"tag": "complex",
-                             "base": {"tag": "identifier", "value": "funcs"},
-                             "index": {"tag": "number", "value": 0}},
-                   "arguments": [{"tag": "identifier", "value": "x"}]}
+    assert ast == {
+        "tag": "call",
+        "callee": {
+            "tag": "complex",
+            "base": {"tag": "identifier", "value": "funcs"},
+            "index": {"tag": "number", "value": 0},
+        },
+        "arguments": [{"tag": "identifier", "value": "x"}],
+    }
     assert rest[0]["tag"] is None
 
     # A call's own result can be called again immediately: makeAdder(1)(2).
@@ -1051,10 +1132,15 @@ def test_parse_call_expression():
 
     # A call's result can also be indexed or accessed by field immediately.
     ast, rest = parse_complex_expression(tokenize("f().result"))
-    assert ast == {"tag": "complex",
-                   "base": {"tag": "call", "callee": {"tag": "identifier", "value": "f"},
-                            "arguments": []},
-                   "index": {"tag": "string", "value": "result"}}
+    assert ast == {
+        "tag": "complex",
+        "base": {
+            "tag": "call",
+            "callee": {"tag": "identifier", "value": "f"},
+            "arguments": [],
+        },
+        "index": {"tag": "string", "value": "result"},
+    }
 
     # Assignment statements: a call is a legal bare statement, and a call
     # followed by an index suffix is a legal assignment target (the call
@@ -1062,19 +1148,26 @@ def test_parse_call_expression():
     # bare call itself is a legal assignment target is an evaluation-time
     # question now, not a parse-time one -- see test_evaluate_assign_targets.
     ast, rest = parse_statement(tokenize("f(1, 2)"))
-    assert ast == {"tag": "call", "callee": {"tag": "identifier", "value": "f"},
-                   "arguments": [{"tag": "number", "value": 1},
-                                 {"tag": "number", "value": 2}]}
+    assert ast == {
+        "tag": "call",
+        "callee": {"tag": "identifier", "value": "f"},
+        "arguments": [{"tag": "number", "value": 1}, {"tag": "number", "value": 2}],
+    }
     assert rest[0]["tag"] is None
 
     # f() = 5 now parses fine: the parser no longer restricts what can
     # appear to the left of "=". See test_evaluate_assign_targets for the
     # evaluation-time rejection.
     ast, rest = parse_statement(tokenize("f() = 5"))
-    assert ast == {"tag": "assign",
-                   "target": {"tag": "call", "callee": {"tag": "identifier", "value": "f"},
-                              "arguments": []},
-                   "expression": {"tag": "number", "value": 5}}
+    assert ast == {
+        "tag": "assign",
+        "target": {
+            "tag": "call",
+            "callee": {"tag": "identifier", "value": "f"},
+            "arguments": [],
+        },
+        "expression": {"tag": "number", "value": 5},
+    }
 
     ast, rest = parse_statement(tokenize("f()[0] = 5"))
     assert ast["tag"] == "assign"
@@ -1140,9 +1233,11 @@ def test_parse_assignment_expression():
     ast, rest = parse_expression(tokenize("items[0]=1"))
     assert ast == {
         "tag": "assign",
-        "target": {"tag": "complex",
-                   "base": {"tag": "identifier", "value": "items"},
-                   "index": {"tag": "number", "value": 0}},
+        "target": {
+            "tag": "complex",
+            "base": {"tag": "identifier", "value": "items"},
+            "index": {"tag": "number", "value": 0},
+        },
         "expression": {"tag": "number", "value": 1},
     }
     assert rest[0]["tag"] is None
@@ -1151,9 +1246,11 @@ def test_parse_assignment_expression():
     ast, rest = parse_expression(tokenize("matrix[row][col]=1"))
     assert ast["target"] == {
         "tag": "complex",
-        "base": {"tag": "complex",
-                 "base": {"tag": "identifier", "value": "matrix"},
-                 "index": {"tag": "identifier", "value": "row"}},
+        "base": {
+            "tag": "complex",
+            "base": {"tag": "identifier", "value": "matrix"},
+            "index": {"tag": "identifier", "value": "row"},
+        },
         "index": {"tag": "identifier", "value": "col"},
     }
     assert rest[0]["tag"] is None
@@ -1176,10 +1273,16 @@ def test_parse_block():
     # ===== CHAPTER 7 TESTS =====
     print("test parse_block()")
     ast, rest = parse_block(tokenize("{ x=1 }"))
-    assert ast == {"tag": "statement_list",
-                    "statements": [{"tag": "assign",
-                                    "target": {"tag": "identifier", "value": "x"},
-                                    "expression": {"tag": "number", "value": 1}}]}
+    assert ast == {
+        "tag": "statement_list",
+        "statements": [
+            {
+                "tag": "assign",
+                "target": {"tag": "identifier", "value": "x"},
+                "expression": {"tag": "number", "value": 1},
+            }
+        ],
+    }
     assert rest[0]["tag"] is None
 
     ast, rest = parse_block(tokenize("{ x=1; y=2 }"))
@@ -1224,10 +1327,16 @@ def test_parse_if_statement():
     assert ast == {
         "tag": "if",
         "condition": {"tag": "identifier", "value": "x"},
-        "then": {"tag": "statement_list",
-                 "statements": [{"tag": "assign",
-                                 "target": {"tag": "identifier", "value": "y"},
-                                 "expression": {"tag": "number", "value": 1}}]},
+        "then": {
+            "tag": "statement_list",
+            "statements": [
+                {
+                    "tag": "assign",
+                    "target": {"tag": "identifier", "value": "y"},
+                    "expression": {"tag": "number", "value": 1},
+                }
+            ],
+        },
         "else": None,
     }
     assert rest[0]["tag"] is None
@@ -1263,7 +1372,10 @@ def test_parse_if_statement():
     # same as any other statement; "else" must directly follow the
     # preceding "}" with no semicolon in between.
     ast = parse(tokenize("if (true) { x=1 }; y=2"))
-    assert [statement["tag"] for statement in ast["statements"]["statements"]] == ["if", "assign"]
+    assert [statement["tag"] for statement in ast["statements"]["statements"]] == [
+        "if",
+        "assign",
+    ]
     expect_syntax_error("if (true) { x=1 } y=2", "Unexpected token")
     expect_syntax_error("if (true) { x=1 }; else { x=2 }", "Expected factor")
 
@@ -1275,10 +1387,16 @@ def test_parse_while_statement():
     assert ast == {
         "tag": "while",
         "condition": {"tag": "identifier", "value": "x"},
-        "body": {"tag": "statement_list",
-                 "statements": [{"tag": "assign",
-                                 "target": {"tag": "identifier", "value": "y"},
-                                 "expression": {"tag": "number", "value": 1}}]},
+        "body": {
+            "tag": "statement_list",
+            "statements": [
+                {
+                    "tag": "assign",
+                    "target": {"tag": "identifier", "value": "y"},
+                    "expression": {"tag": "number", "value": 1},
+                }
+            ],
+        },
     }
     assert rest[0]["tag"] is None
 

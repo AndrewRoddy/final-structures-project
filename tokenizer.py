@@ -1,28 +1,25 @@
 import re
 
-
 # At each source position, the first matching pattern wins.
 # Longer operators and reserved words therefore precede their shorter matches.
 patterns = [
     (r"\s+", "whitespace"),
-    (r"//[^\r\n]*", "comment"),  # Before division; leave the line ending for whitespace.
-
+    (
+        r"//[^\r\n]*",
+        "comment",
+    ),  # Before division; leave the line ending for whitespace.
     # ===== CHAPTER 3: string literals =====
     # Strings use double quotes and stay on one source line.
     (r'"(?:\\[^\r\n]|[^"\\\r\n])*"', "string"),
-
     (r"\d*\.\d+|\d+\.\d*|\d+", "number"),
     (r"==", "=="),
     # Inequality must win over the single-character spelling of "not".
     (r"!=", "!="),
-    
     # Compound Assignment for addition, subtraction, division and multiplication
     (r"\+=", "+="),
     (r"-=", "-="),
     (r"/=", "/="),
     (r"\*=", "*="),
-     
-    
     # Normalize both spellings here, so the parser only needs word-form tags.
     # Word boundaries keep names such as "android" and "notable" intact.
     (r"and\b|&&", "and"),
@@ -38,15 +35,12 @@ patterns = [
     (r"\*", "*"),
     (r"\(", "("),
     (r"\)", ")"),
-
     # ===== CHAPTER 7: statement blocks =====
     (r"\{", "{"),
     (r"\}", "}"),
-
     # ===== CHAPTER 9: list literals and indexing =====
     (r"\[", "["),
     (r"\]", "]"),
-
     (r"\=", "="),
     (r"\;", ";"),
     (r",", ","),
@@ -56,26 +50,20 @@ patterns = [
     (r"exit\b", "exit"),
     (r"true\b", "true"),
     (r"false\b", "false"),
-
     # ===== CHAPTER 11: the value a function has if it never returns one =====
     (r"null\b", "null"),
-
     # ===== CHAPTER 7: conditional keywords =====
     (r"if\b", "if"),
     (r"else\b", "else"),
-
     # ===== CHAPTER 8: loop keywords =====
     (r"while\b", "while"),
     (r"break\b", "break"),
     (r"continue\b", "continue"),
-
     # ===== CHAPTER 12: update an existing lexical binding =====
     (r"set\b", "set"),
-
     # ===== CHAPTER 11: function keywords =====
     (r"function\b", "function"),
     (r"return\b", "return"),
-
     # ===== CHAPTER 3: input expression =====
     # input is a dedicated expression form for now, not a general function.
     (r"input\b", "input"),
@@ -83,7 +71,6 @@ patterns = [
     (r"string\b", "string_conversion"),
     (r"boolean\b", "boolean_conversion"),
     (r"type\b", "type_query"),
-
     # ===== CHAPTER 9: length, slice, head, and tail are dedicated expressions =====
     # They are written like calls, but they are not function calls: this
     # chapter has no general function syntax.
@@ -91,14 +78,12 @@ patterns = [
     (r"slice\b", "slice"),
     (r"head\b", "head"),
     (r"tail\b", "tail"),
-
     # ===== CHAPTER 10: copy is a dedicated expression =====
     # Same reason as length, slice, head, and tail: no general function
     # syntax yet. x == copy(x) for every x; for a list, copy is deep: every
     # nested list is a new list too, all the way down, not just the
     # outermost one the way slice and tail are.
     (r"copy\b", "copy"),
-
     # ===== CHAPTER 10: dot syntax =====
     # obj.field is sugar for obj["field"], parsed to the exact same
     # "complex" node. The number pattern above only matches a "." that has
@@ -107,8 +92,6 @@ patterns = [
     # obj.field, "obj" is already its own identifier token, and "field"
     # starts with a letter, not a digit.
     (r"\.", "."),
-
-
     (r"[a-zA-Z_][\w]*", "identifier"),
     (r".", "error"),
 ]
@@ -277,8 +260,20 @@ def test_blocks_and_conditionals():
     print("test tokenize blocks and conditionals")
     tokens = tokenize("if (x) { y } else { z }")
     tags = [token["tag"] for token in tokens]
-    assert tags == ["if", "(", "identifier", ")", "{", "identifier", "}",
-                     "else", "{", "identifier", "}", None]
+    assert tags == [
+        "if",
+        "(",
+        "identifier",
+        ")",
+        "{",
+        "identifier",
+        "}",
+        "else",
+        "{",
+        "identifier",
+        "}",
+        None,
+    ]
 
     tokens = tokenize("ifx elsewhere")
     tags = [token["tag"] for token in tokens]
@@ -292,8 +287,18 @@ def test_loop_keywords():
     print("test tokenize loop keywords")
     tokens = tokenize("while (x) { break; continue }")
     tags = [token["tag"] for token in tokens]
-    assert tags == ["while", "(", "identifier", ")", "{", "break", ";",
-                     "continue", "}", None]
+    assert tags == [
+        "while",
+        "(",
+        "identifier",
+        ")",
+        "{",
+        "break",
+        ";",
+        "continue",
+        "}",
+        None,
+    ]
 
     tokens = tokenize("whiley breaking continued")
     tags = [token["tag"] for token in tokens]
@@ -308,8 +313,24 @@ def test_lists_and_indexing():
     print("test tokenize lists and indexing")
     tokens = tokenize("items[0] = [1, 2, length(items)]")
     tags = [token["tag"] for token in tokens]
-    assert tags == ["identifier", "[", "number", "]", "=", "[", "number", ",",
-                     "number", ",", "length", "(", "identifier", ")", "]", None]
+    assert tags == [
+        "identifier",
+        "[",
+        "number",
+        "]",
+        "=",
+        "[",
+        "number",
+        ",",
+        "number",
+        ",",
+        "length",
+        "(",
+        "identifier",
+        ")",
+        "]",
+        None,
+    ]
 
     tokens = tokenize("lengthy length_two")
     tags = [token["tag"] for token in tokens]
@@ -323,9 +344,25 @@ def test_slice_head_tail_keywords():
     print("test tokenize slice, head, and tail")
     tokens = tokenize("slice(items, 1, 3) head(items) tail(items)")
     tags = [token["tag"] for token in tokens]
-    assert tags == ["slice", "(", "identifier", ",", "number", ",", "number", ")",
-                    "head", "(", "identifier", ")",
-                    "tail", "(", "identifier", ")", None]
+    assert tags == [
+        "slice",
+        "(",
+        "identifier",
+        ",",
+        "number",
+        ",",
+        "number",
+        ")",
+        "head",
+        "(",
+        "identifier",
+        ")",
+        "tail",
+        "(",
+        "identifier",
+        ")",
+        None,
+    ]
 
     # Word boundaries keep longer names intact.
     tokens = tokenize("sliced header tailor head_two")
@@ -357,8 +394,22 @@ def test_function_keywords():
     print("test tokenize function keywords")
     tokens = tokenize("function add(a, b) { return a + b }")
     tags = [token["tag"] for token in tokens]
-    assert tags == ["function", "identifier", "(", "identifier", ",", "identifier",
-                     ")", "{", "return", "identifier", "+", "identifier", "}", None]
+    assert tags == [
+        "function",
+        "identifier",
+        "(",
+        "identifier",
+        ",",
+        "identifier",
+        ")",
+        "{",
+        "return",
+        "identifier",
+        "+",
+        "identifier",
+        "}",
+        None,
+    ]
 
     # Word boundaries keep longer names intact.
     tokens = tokenize("functional returned")
@@ -399,9 +450,28 @@ def test_dot_syntax():
     # Suffixes mix freely.
     tokens = tokenize('a[1].bob[3][4].a.b["dog"]')
     tags = [token["tag"] for token in tokens]
-    assert tags == ["identifier", "[", "number", "]", ".", "identifier",
-                     "[", "number", "]", "[", "number", "]", ".", "identifier",
-                     ".", "identifier", "[", "string", "]", None]
+    assert tags == [
+        "identifier",
+        "[",
+        "number",
+        "]",
+        ".",
+        "identifier",
+        "[",
+        "number",
+        "]",
+        "[",
+        "number",
+        "]",
+        ".",
+        "identifier",
+        ".",
+        "identifier",
+        "[",
+        "string",
+        "]",
+        None,
+    ]
 
 
 def test_identifiers():
@@ -480,4 +550,3 @@ if __name__ == "__main__":
     test_whitespace()
     test_error()
     test_unterminated_string()
-    print("done.")
