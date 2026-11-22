@@ -3,6 +3,7 @@ import parser
 from tokenizer import tokenize
 
 
+# Helper function for running the tests
 def run_code(code):
     vars = {}
     ast = parser.parse(tokenize(code))
@@ -10,6 +11,7 @@ def run_code(code):
     return ast, vars
 
 
+# Regular tests
 def test_compound_assignment_addition():
     print("test compound assignment addition")
     code = """
@@ -54,7 +56,8 @@ def test_compound_assignment_multiplication():
     assert vars["a"] == 9
 
 
-def test_complex_compound_assignment():
+# Complex tests
+def test_complex_compound_assignment_addition():
     print("test complex compound assignment")
     code = """
         i = function() {return 0;};
@@ -67,3 +70,44 @@ def test_complex_compound_assignment():
     a = vars["a"]
     assert vars["a"][0] == 4
 
+
+def test_complex_compound_assignment_subtraction():
+    print("test complex compound assignment")
+    code = """
+        i = function() {return 0;};
+        a = [9,1,2,3];
+        v = 3;
+        a[i()] -= v;
+        print(a);
+    """
+    _, vars = run_code(code)
+    a = vars["a"]
+    assert vars["a"][0] == 6
+
+
+def test_complex_compound_assignment_division():
+    print("test complex compound assignment")
+    code = """
+        i = function() {return 0;};
+        a = [9,1,2,3];
+        v = 3;
+        a[i()] /= v;
+        print(a);
+    """
+    _, vars = run_code(code)
+    a = vars["a"]
+    assert vars["a"][0] == 3
+
+
+def test_complex_compound_assignment_multiplication():
+    print("test complex compound assignment")
+    code = """
+        i = function() {return 0;};
+        a = [3,1,2,3];
+        v = 3;
+        a[i()] *= v;
+        print(a);
+    """
+    _, vars = run_code(code)
+    a = vars["a"]
+    assert vars["a"][0] == 9
