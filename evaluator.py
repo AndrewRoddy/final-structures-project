@@ -889,13 +889,13 @@ def evaluate(ast, environment):
         right, status = evaluate(ast["expression"], environment)
         left = destination[key]
         if ast["tag"] == "compound_assignment_add":
-            left += right
+            left = left + right
         elif ast["tag"] == "compound_assignment_subtract":
-            left -= right
+            left = left - right
         elif ast["tag"] == "compound_assignment_divide":
-            left /= right
+            left = left / right
         elif ast["tag"] == "compound_assignment_multiply":
-            left *= right
+            left = left * right
         if status is not None:
             return left, status
 
