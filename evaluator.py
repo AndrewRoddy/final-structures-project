@@ -863,26 +863,18 @@ def evaluate(ast, environment):
         left, _ = evaluate(ast["target"], environment)
         right, _ = evaluate(ast["expression"], environment)
 
+        new_left = left
         if ast["tag"] == "compound_assignment_add":
             new_left = left + right
-            index = ast["target"]["value"]
-            environment[index] = new_left
-            return new_left, None
-        if ast["tag"] == "compound_assignment_subtract":
+        elif ast["tag"] == "compound_assignment_subtract":
             new_left = left - right
-            index = ast["target"]["value"]
-            environment[index] = new_left
-            return new_left, None
-        if ast["tag"] == "compound_assignment_divide":
+        elif ast["tag"] == "compound_assignment_divide":
             new_left = left / right
-            index = ast["target"]["value"]
-            environment[index] = new_left
-            return new_left, None
-        if ast["tag"] == "compound_assignment_multiply":
+        elif ast["tag"] == "compound_assignment_multiply":
             new_left = left * right
-            index = ast["target"]["value"]
-            environment[index] = new_left
-            return new_left, None
+        index = ast["target"]["value"]
+        environment[index] = new_left
+        return new_left, None
 
     if ast["tag"] == "unary-":
         value, status = evaluate(ast["operand"], environment)
