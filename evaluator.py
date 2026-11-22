@@ -888,14 +888,19 @@ def evaluate(ast, environment):
             raise ValueError(f"Cannot assign to a {target['tag']} expression")
         right, status = evaluate(ast["expression"], environment)
         left = destination[key]
+        operator = ""
         if ast["tag"] == "compound_assignment_add":
             left = left + right
+            operator = "+"
         elif ast["tag"] == "compound_assignment_subtract":
             left = left - right
+            operator = "-"
         elif ast["tag"] == "compound_assignment_divide":
             left = left / right
+            operator = "/"
         elif ast["tag"] == "compound_assignment_multiply":
             left = left * right
+            operator = "*"
         if status is not None:
             return left, status
 

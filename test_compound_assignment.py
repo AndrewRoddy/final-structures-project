@@ -7,8 +7,8 @@ from tokenizer import tokenize
 def run_code(code):
     vars = {}
     ast = parser.parse(tokenize(code))
-    evaluate(ast, vars)
-    return ast, vars
+    result = evaluate(ast, vars)
+    return ast, vars, result
 
 
 # Regular tests
@@ -18,7 +18,7 @@ def test_compound_assignment_addition():
         a = 1;
         a += 2;
     """
-    _, vars = run_code(code)
+    _, vars, _ = run_code(code)
     a = vars["a"]
     assert vars["a"] == 3
 
@@ -29,7 +29,7 @@ def test_compound_assignment_subtraction():
         a = 9;
         a -= 2;
     """
-    _, vars = run_code(code)
+    _, vars, _ = run_code(code)
     a = vars["a"]
     assert vars["a"] == 7
 
@@ -40,7 +40,7 @@ def test_compound_assignment_division():
         a = 2;
         a /= 2;
     """
-    _, vars = run_code(code)
+    _, vars, _ = run_code(code)
     a = vars["a"]
     assert vars["a"] == 1
 
@@ -51,7 +51,7 @@ def test_compound_assignment_multiplication():
         a = 3;
         a *= 3;
     """
-    _, vars = run_code(code)
+    _, vars, _ = run_code(code)
     a = vars["a"]
     assert vars["a"] == 9
 
@@ -66,7 +66,7 @@ def test_complex_compound_assignment_addition():
         a[i()] += v;
         print(a);
     """
-    _, vars = run_code(code)
+    _, vars, _ = run_code(code)
     a = vars["a"]
     assert vars["a"][0] == 4
 
@@ -80,7 +80,7 @@ def test_complex_compound_assignment_subtraction():
         a[i()] -= v;
         print(a);
     """
-    _, vars = run_code(code)
+    _, vars, _ = run_code(code)
     a = vars["a"]
     assert vars["a"][0] == 6
 
@@ -94,7 +94,7 @@ def test_complex_compound_assignment_division():
         a[i()] /= v;
         print(a);
     """
-    _, vars = run_code(code)
+    _, vars, _ = run_code(code)
     a = vars["a"]
     assert vars["a"][0] == 3
 
@@ -108,6 +108,40 @@ def test_complex_compound_assignment_multiplication():
         a[i()] *= v;
         print(a);
     """
-    _, vars = run_code(code)
+    _, vars, _ = run_code(code)
     a = vars["a"]
     assert vars["a"][0] == 9
+
+
+# Checks for side effects
+def test_side_effects():
+    print("test for side effects")
+    code = """
+       count = 0;
+       function next() {
+           set count = count + 1;
+           return 0;
+       };
+       x = [1, 2];
+       x[next()] += 1;
+    """
+    _, vars, _ = run_code(code)
+    assert vars["count"] == 1
+    assert vars["x"] == [2, 2]
+
+
+def test_exit_before_compound_assignment():
+    print("test compound assignment")
+    code = """
+        x = 1;
+        function stop() {
+            exit(3);
+        };
+        x += stop();
+        i_should_not_exist = 1;
+        
+    """
+    _, _, result = run_code(code)
+    assert result == (3, "exit")
+    assert vars["x"] == 1
+    assert "i_should_not_exist" not in vars
