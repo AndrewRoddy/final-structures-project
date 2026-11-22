@@ -27,7 +27,7 @@ class FileIOTests(unittest.TestCase):
             env = self.run_source(f'written=io.write({self.path},{json.dumps(text,ensure_ascii=False)});text=io.read({self.path})')
             self.assertIsNone(env['written'])
             self.assertEqual(env['text'], text)
-            self.assertEqual(self.target.read_text(), text)
+            self.assertEqual(self.target.read_text(encoding='utf-8'), text)
 
     def test_json_nested_round_trip(self):
         env = self.run_source(f'''data={{"name":"café ☕","count":3,"price":2.5,"ok":true,
@@ -37,7 +37,7 @@ class FileIOTests(unittest.TestCase):
         self.assertIsNone(env['written'])
         self.assertTrue(env['same'])
         self.assertEqual(env['original'], 3)
-        self.assertEqual(json.loads(self.target.read_text())['name'], 'café ☕')
+        self.assertEqual(json.loads(self.target.read_text(encoding='utf-8'))['name'], 'café ☕')
 
     def test_json_value_kinds(self):
         for expression in ('{}','[]','null','true','false','12','-2.5','"hello"','[{},[],null]'):
@@ -62,12 +62,12 @@ class FileIOTests(unittest.TestCase):
             self.target.write_text('keep')
             with self.subTest(source=source), self.assertRaises((TypeError,ValueError)):
                 self.run_source(source)
-            self.assertEqual(self.target.read_text(),'keep')
+            self.assertEqual(self.target.read_text(encoding='utf-8'),'keep')
         for number in (math.nan, math.inf, -math.inf):
             self.target.write_text('keep')
             with self.assertRaises(ValueError):
                 file_io.write_json(str(self.target),number)
-            self.assertEqual(self.target.read_text(),'keep')
+            self.assertEqual(self.target.read_text(encoding='utf-8'),'keep')
 
     def test_invalid_json_and_io_errors(self):
         for text in ('','{oops}','{} {}','{"number":NaN}','[1,]'):

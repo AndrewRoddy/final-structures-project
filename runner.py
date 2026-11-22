@@ -1,6 +1,5 @@
 import sys
-from pathlib import Path
-
+from evaluator import evaluate_source
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
