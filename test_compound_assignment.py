@@ -141,7 +141,7 @@ def test_exit_before_compound_assignment():
         i_should_not_exist = 1;
         
     """
-    _, _, result = run_code(code)
+    _, vars, result = run_code(code)
     assert result == (3, "exit")
     assert vars["x"] == 1
     assert "i_should_not_exist" not in vars

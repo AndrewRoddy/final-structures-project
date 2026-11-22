@@ -887,6 +887,8 @@ def evaluate(ast, environment):
         else:
             raise ValueError(f"Cannot assign to a {target['tag']} expression")
         right, status = evaluate(ast["expression"], environment)
+
+            
         left = destination[key]
         operator = ""
         if ast["tag"] == "compound_assignment_add":
@@ -902,7 +904,7 @@ def evaluate(ast, environment):
             left = left * right
             operator = "*"
         if status is not None:
-            return left, status
+            return right, status
 
         destination[key] = left
         return left, None
