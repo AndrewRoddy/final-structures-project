@@ -858,23 +858,49 @@ def evaluate(ast, environment):
         or ast["tag"] == "compound_assignment_divide"
         or ast["tag"] == "compound_assignment_multiply"
     ):
+        target = ast["target"]
+        if target["tag"] == "identifier":
+            name = target["value"]
+            destination = environment
+            if name in ("__input", "__output"):
+                destination = io_environment(environment)
+            key = name
+        elif target["tag"] == "complex":
+            base, status = evaluate(target["base"], environment)
+            if status is not None:
+                return base, status
+            index, status = evaluate(target["index"], environment)
 
-        # Gets the left and right nodes correctly
-        left, _ = evaluate(ast["target"], environment)
-        right, _ = evaluate(ast["expression"], environment)
-
-        new_left = left
+            if status is not None:
+                return index, status
+            if is_function(base):
+                raise TypeError("Indexed assignment requires a list or object")
+            elif is_object(base):
+                if type(index) is not str:
+                    raise TypeError("Object key must be a string")
+                key = index
+            elif type(base) is list:
+                key = require_index(index, base)
+            else:
+                raise TypeError("Indexed assignment requires a list or object")
+            destination = base
+        else:
+            raise ValueError(f"Cannot assign to a {target['tag']} expression")
+        right, status = evaluate(ast["expression"], environment)
+        left = destination[key]
         if ast["tag"] == "compound_assignment_add":
-            new_left = left + right
+            left += right
         elif ast["tag"] == "compound_assignment_subtract":
-            new_left = left - right
+            left -= right
         elif ast["tag"] == "compound_assignment_divide":
-            new_left = left / right
+            left /= right
         elif ast["tag"] == "compound_assignment_multiply":
-            new_left = left * right
-        index = ast["target"]["value"]
-        environment[index] = new_left
-        return new_left, None
+            left *= right
+        if status is not None:
+            return left, status
+
+        destination[key] = left
+        return left, None
 
     if ast["tag"] == "unary-":
         value, status = evaluate(ast["operand"], environment)
