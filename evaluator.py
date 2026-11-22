@@ -829,6 +829,21 @@ def evaluate(ast, environment):
             raise TypeError("Unary minus requires a number")
         return -value, None
 
+
+    # Compound Assignment
+    if ast["tag"] == "compound_assignment_add":
+        new_left = left + right
+        return new_left, None
+    if ast["tag"] == "compound_assignment_subtract":
+        new_left = left - right
+        return new_left, None
+    if ast["tag"] == "compound_assignment_divide":
+        new_left = left / right
+        return new_left, None
+    if ast["tag"] == "compound_assignment_multiply":
+        new_left = left * right
+        return new_left, None
+        
     if ast["tag"] in ("==", "!=", "<", "<=", ">", ">="):
         # Comparisons evaluate both operands, left to right. Unlike logical
         # operators they have no short-circuit case.

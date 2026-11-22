@@ -412,7 +412,20 @@ def parse_expression(tokens):
     # x = y = 1 parses as x = (y = 1), the same nesting a reader would draw.
     # Operator aliases were normalized by the tokenizer, not by these helpers.
     left, tokens = parse_logic_or(tokens)
-    if tokens[0]["tag"] == "=":
+    if tokens[0]["tag"] == "+=" or tokens[0]["tag"] == "-=" or tokens[0]["tag"] == "/=" or tokens[0]["tag"] == "*=":
+        right, tokens = parse_expression(tokens[1:])
+        if tokens[0]["tag"] == "+=":
+            return {"tag": "compound_assignment_add", "target": left, "expression": right}, tokens
+        elif tokens[0]["tag"] == "-=":
+            return {"tag": "compound_assignment_subtract", "target": left, "expression": right}, tokens
+        elif tokens[0]["tag"] == "/=":
+            return {"tag": "compound_assignment_divide", "target": left, "expression": right}, tokens
+        elif tokens[0]["tag"] == "*=":
+            return {"tag": "compound_assignment_multiply", "target": left, "expression": right}, tokens
+        else:
+            raise ValueError("Unknown form of compound assignment")
+        
+    elif tokens[0]["tag"] == "=":
         right, tokens = parse_expression(tokens[1:])
         return {"tag": "assign", "target": left, "expression": right}, tokens
     return left, tokens
