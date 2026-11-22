@@ -1,6 +1,5 @@
 import sys
-
-from evaluator import evaluate_source
+from pathlib import Path
 
 
 if __name__ == "__main__":
