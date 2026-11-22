@@ -423,26 +423,27 @@ def parse_expression(tokens):
         or tokens[0]["tag"] == "/="
         or tokens[0]["tag"] == "*="
     ):
+        compound_assigner = tokens[0]["tag"]
         right, tokens = parse_expression(tokens[1:])
-        if tokens[0]["tag"] == "+=":
+        if compound_assigner == "+=":
             return {
                 "tag": "compound_assignment_add",
                 "target": left,
                 "expression": right,
             }, tokens
-        elif tokens[0]["tag"] == "-=":
+        elif compound_assigner == "-=":
             return {
                 "tag": "compound_assignment_subtract",
                 "target": left,
                 "expression": right,
             }, tokens
-        elif tokens[0]["tag"] == "/=":
+        elif compound_assigner == "/=":
             return {
                 "tag": "compound_assignment_divide",
                 "target": left,
                 "expression": right,
             }, tokens
-        elif tokens[0]["tag"] == "*=":
+        elif compound_assigner == "*=":
             return {
                 "tag": "compound_assignment_multiply",
                 "target": left,
